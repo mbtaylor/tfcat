@@ -22,4 +22,17 @@ public class Report {
     public String getMessage() {
         return message_;
     }
+
+    public static String toCode( String prefix, String suffix ) {
+        return pad( prefix + suffix, 4, 'X' );
+    }
+
+    private static String pad( String txt, int leng, char chr ) {
+        StringBuffer sbuf = new StringBuffer( leng );
+        sbuf.append( txt.substring( Math.min( txt.length(), leng ) ) );
+        while ( sbuf.length() < leng ) {
+            sbuf.append( chr );
+        }
+        return sbuf.toString();
+    }
 }

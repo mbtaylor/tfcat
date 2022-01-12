@@ -6,9 +6,14 @@ JAR = jar
 CLASSPATH = $(JSON_JAR)
 
 JSRC = \
+       Bbox.java \
        Level.java \
+       Point.java \
+       Position.java \
        Report.java \
-       TfcatCheck.java \
+       TfcatFactory.java \
+       TfcatObject.java \
+       TfcatParser.java \
 
 build: jar
 
