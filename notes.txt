@@ -1,0 +1,9 @@
+TFCat spec:
+   DOI: 10.25935/6068-8528 
+   https://maser.lesia.obspm.fr/publications/doi/json-implementation-of-time.html
+   https://gitlab.obspm.fr/maser/catalogues/catalogue-format/-/blob/master/json/spec.md
+
+
+GeoJSON:
+   https://tools.ietf.org/html/rfc7946
+
