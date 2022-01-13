@@ -23,13 +23,18 @@ public class Report {
         return message_;
     }
 
+    @Override
+    public String toString() {
+        return level_.getChar() + "-" + code_ + ": " + message_;
+    }
+
     public static String toCode( String prefix, String suffix ) {
-        return pad( prefix + suffix, 4, 'X' );
+        return pad( prefix + suffix, 4, 'X' ).toUpperCase();
     }
 
     private static String pad( String txt, int leng, char chr ) {
         StringBuffer sbuf = new StringBuffer( leng );
-        sbuf.append( txt.substring( Math.min( txt.length(), leng ) ) );
+        sbuf.append( txt.substring( 0, Math.min( txt.length(), leng ) ) );
         while ( sbuf.length() < leng ) {
             sbuf.append( chr );
         }

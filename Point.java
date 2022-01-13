@@ -11,13 +11,15 @@ public class Point extends TfcatObject {
         pos_ = pos;
     }
 
+    public Position getPosition() {
+        return pos_;
+    }
+
     public static Point createTfcat( Consumer<Report> reporter, JSONObject json,
                                      Bbox bbox ) {
-        double[] coords =
-            TfcatParser.getNumericArray( reporter, json, "coordinates" );
-        Position pos = Position.create( reporter, coords );
-        return pos == null
-             ? null
-             : new Point( json, bbox, pos );
+        Position pos = new JsonTool( reporter )
+                      .asPosition( json.opt( "coordinates" ),
+                                   "Point coordinates", true );
+        return pos == null ? null : new Point( json, bbox, pos );
     }
 }

@@ -1,4 +1,7 @@
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -7,132 +10,57 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 public class TfcatParser {
 
     private final Consumer<Report> reporter_;
+    private final JsonTool jsonTool_;
 
     private static final Map<String,TfcatFactory<?>> factoryMap_ =
         createFactoryMap();
 
     public TfcatParser( Consumer<Report> reporter ) {
         reporter_ = reporter == null ? r -> {} : reporter;
+        jsonTool_ = new JsonTool( reporter );
     }
 
     public TfcatObject parseTfcat( JSONObject json ) {
-        String type = getRequiredString( json, "type" );
+        String type = jsonTool_.asString( json.opt( "type" ), "type", true );
         TfcatFactory<?> factory = factoryMap_.get( type );
         if ( factory != null ) {
-            return factory.createTfcat( reporter_, json, getBbox( json ) );
+            return factory.createTfcat( reporter_, json,
+                                        getBboxMember( json ) );
         }
         else if ( isNull( type ) ) {
             return null;
         }
         else {
-            report( Level.ERROR, "UKTP",
-                    "Unknown TFCat Type \"" + type + "\"" );
+            jsonTool_.report( Level.ERROR, "UKTP",
+                              "Unknown TFCat Type \"" + type + "\"" );
             return null;
         }
     }
 
-    private Bbox getBbox( JSONObject json ) {
-        double[] bboxArray = getNumericArray( reporter_, json, "bbox" );
+    private Bbox getBboxMember( JSONObject json ) {
+        double[] bboxArray =
+            jsonTool_.asNumericArray( json.opt( "bbox" ), "bbox", false, 4 );
         if ( bboxArray == null ) {
             return null;
         }
         else {
-            if ( bboxArray.length != 4 ) {
-                report( Level.ERROR, "BBN4",
-                        "bbox array wrong length"
-                      + " (" + bboxArray.length + " != 4)" );
-                return null;
-            }
-            else if ( bboxArray[ 0 ] <= bboxArray[ 2 ] &&
-                      bboxArray[ 1 ] <= bboxArray[ 3 ] ) {
+            if ( bboxArray[ 0 ] <= bboxArray[ 2 ] &&
+                 bboxArray[ 1 ] <= bboxArray[ 3 ] ) {
                 return new Bbox( bboxArray[ 0 ], bboxArray[ 1 ],
                                  bboxArray[ 2 ], bboxArray[ 2 ] );
             }
             else {
-                report( Level.ERROR, "BBMM",
-                        "bbox array values out of sequence: "
-                      + Arrays.toString( bboxArray ) );
+                jsonTool_.report( Level.ERROR, "BBMM",
+                                  "bbox array values out of sequence: "
+                                + Arrays.toString( bboxArray ) );
                 return null;
             }
         }
-    }
-
-    private String getRequiredString( JSONObject json, String key ) {
-        if ( json.has( key ) ) {
-            return getString( json, key );
-        }
-        else {
-            report( Level.ERROR, Report.toCode( "SV", key ),
-                    "missing member \"" + key + "\"" );
-            return null;
-        }
-    }
-
-    private String getString( JSONObject json, String key ) {
-        if ( json.has( key ) ) {
-            Object value = json.get( key );
-            if ( value instanceof String ) {
-                return (String) value;
-            }
-            else {
-                report( Level.ERROR, Report.toCode( "SV", key ),
-                        "non-string value for \"" + key + "\"" );
-                return null;
-            }
-        }
-        else {
-            return null;
-        }
-    }
-
-    static double[] getNumericArray( Consumer<Report> reporter,
-                                     JSONObject json, String key ) {
-        if ( json.has( key ) ) {
-            Object value = json.get( key );
-            if ( value instanceof JSONArray ) {
-                JSONArray jarray = (JSONArray) value;
-                int n = jarray.length();
-                double[] darray = new double[ n ];
-                for ( int i = 0; i < n; i++ ) {
-                    Object item = jarray.get( i );
-                    final double dval;
-                    if ( isNull( item ) ) {
-                        dval = Double.NaN;
-                    }
-                    else if ( item instanceof Number ) {
-                        dval = ((Number) item).doubleValue();
-                    }
-                    else {
-                        reporter
-                       .accept( new Report( Level.ERROR,
-                                            Report.toCode( "NN", key ),
-                                            "Non-numeric-array value"
-                                          + " for \"" + key + "\"" ) );
-                        return null;
-                    }
-                    darray[ i ] = dval;
-                }
-                return darray;
-            }
-            else {
-                reporter.accept( new Report( Level.ERROR,
-                                             Report.toCode( "NA", key ),
-                                             "Non-array value"
-                                           + " for \"" + key + "\"" ) );
-                return null;
-            }
-        }
-        else {
-            return null;
-        }
-    }
-
-    private void report( Level level, String code, String msg ) {
-        reporter_.accept( new Report( level, code, msg ) );
     }
 
     private static boolean isNull( Object obj ) {
@@ -142,6 +70,30 @@ public class TfcatParser {
     private static Map<String,TfcatFactory<?>> createFactoryMap() {
         Map<String,TfcatFactory<?>> map = new LinkedHashMap<>();
         map.put( "Point", Point::createTfcat );
+        map.put( "MultiPoint", MultiPoint::createTfcat );
         return map;
+    }
+
+    public static void main( String[] args ) throws IOException {
+        String inFile = args[ 0 ];
+        try ( InputStream in = "-".equals( inFile )
+                             ? System.in
+                             : new FileInputStream( inFile ) ) {
+            JSONObject json = new JSONObject( new JSONTokener( in ) );
+            BasicReporter reporter = new BasicReporter();
+            new TfcatParser( reporter ).parseTfcat( json );
+            List<Report> reports = reporter.getReports();
+            if ( reports.size() == 0 ) {
+                System.out.println( "OK" );
+                return;
+            }
+            else {
+                System.out.println( "FAIL (" + reports.size() + ")" );
+                for ( Report report : reports ) {
+                    System.out.println( "    " + report );
+                }
+                System.exit( 1 );
+            }
+        }
     }
 }

@@ -10,4 +10,8 @@ public enum Level {
     Level() {
         chr_ = toString().charAt( 0 );
     }
+
+    public char getChar() {
+        return chr_;
+    }
 }
