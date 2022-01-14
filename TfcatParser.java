@@ -17,7 +17,7 @@ public class TfcatParser {
     private final Consumer<Report> reporter_;
     private final JsonTool jsonTool_;
 
-    private static final Map<String,TfcatFactory<?>> factoryMap_ =
+    private static final Map<String,ShapeFactory<?>> factoryMap_ =
         createFactoryMap();
 
     public TfcatParser( Consumer<Report> reporter ) {
@@ -25,15 +25,12 @@ public class TfcatParser {
         jsonTool_ = new JsonTool( reporter );
     }
 
-    public TfcatObject parseTfcat( JSONObject json ) {
+    public Geometry<?> parseGeometry( JSONObject json ) {
         String type = jsonTool_.asString( json.opt( "type" ), "type", true );
-        TfcatFactory<?> factory = factoryMap_.get( type );
-        if ( factory != null ) {
-            return factory.createTfcat( reporter_, json,
-                                        getBboxMember( json ) );
-        }
-        else if ( isNull( type ) ) {
-            return null;
+        Bbox bbox = getBboxMember( json );
+        ShapeFactory<?> shapeFact = getShapeFactory( type );
+        if ( shapeFact != null ) {
+            return createGeometry( json, type, bbox, shapeFact );
         }
         else {
             jsonTool_.report( Level.ERROR, "UKTP",
@@ -41,6 +38,23 @@ public class TfcatParser {
             return null;
         }
     }
+
+    private <S> Geometry<S> createGeometry( JSONObject json, String type,
+                                            Bbox bbox,
+                                            ShapeFactory<S> shapeFact ) {
+        Object coords = json.opt( "coordinates" );
+        if ( coords == null ) {
+            jsonTool_.report( Level.ERROR, Report.toCode( "NC", "type" ),
+                              type + ": no coordinates" );
+            return null;
+        }
+        S shape = shapeFact.createShape( reporter, coords );
+        return shape == null ? null
+                             : new Geometry<S>( json, type, bbox, shape );
+    }
+
+
+
 
     private Bbox getBboxMember( JSONObject json ) {
         double[] bboxArray =
@@ -67,13 +81,10 @@ public class TfcatParser {
         return obj == null || JSONObject.NULL.equals( obj );
     }
 
-    private static Map<String,TfcatFactory<?>> createFactoryMap() {
+    private static Map<String,ShapeFactory<?>> createFactoryMap() {
         Map<String,TfcatFactory<?>> map = new LinkedHashMap<>();
-        map.put( "Point", Point::createTfcat );
-        map.put( "MultiPoint", MultiPoint::createTfcat );
-        map.put( "LineString", LineString::createTfcat );
-        map.put( "MultiLineString", MultiLineString::createTfcat );
-        map.put( "Polygon", Polygon::createTfcat );
+        map.put( "Point", ShapeFactory.POINT );
+        map.put( "MultiPoint", ShapeFactory.MULTI_POINT );
         return map;
     }
 
