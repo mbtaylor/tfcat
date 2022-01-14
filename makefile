@@ -9,18 +9,13 @@ MAIN_CLASS = TfcatParser
 JSRC = \
        BasicReporter.java \
        Bbox.java \
+       Decoder.java \
+       Decoders.java \
+       Geometry.java \
        JsonTool.java \
-       Level.java \
        LinearRing.java \
-       LineString.java \
-       MultiLineString.java \
-       MultiPoint.java \
-       Point.java \
-       Polygon.java \
        Position.java \
-       Report.java \
-       TfcatFactory.java \
-       TfcatObject.java \
+       Reporter.java \
        TfcatParser.java \
 
 build: jar

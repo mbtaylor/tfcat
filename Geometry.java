@@ -1,16 +1,18 @@
 
 import org.json.JSONObject;
 
-public abstract class TfcatObject {
+public class Geometry<S> {
 
     private final JSONObject json_;
     private final String type_;
     private final Bbox bbox_;
+    private final S shape_;
 
-    protected TfcatObject( JSONObject json, String type, Bbox bbox ) {
+    public Geometry( JSONObject json, String type, Bbox bbox, S shape ) {
         json_ = json;
         type_ = type;
         bbox_ = bbox;
+        shape_ = shape;
     }
 
     public JSONObject getJson() {
@@ -24,4 +26,9 @@ public abstract class TfcatObject {
     public Bbox getBbox() {
         return bbox_;
     }
+
+    public S getShape() {
+        return shape_;
+    }
 }
+

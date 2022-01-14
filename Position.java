@@ -1,7 +1,4 @@
 
-import java.util.Arrays;
-import java.util.function.Consumer;
-
 public class Position {
 
     private final double time_;
