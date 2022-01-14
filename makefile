@@ -11,8 +11,12 @@ JSRC = \
        Bbox.java \
        JsonTool.java \
        Level.java \
+       LinearRing.java \
+       LineString.java \
+       MultiLineString.java \
        MultiPoint.java \
        Point.java \
+       Polygon.java \
        Position.java \
        Report.java \
        TfcatFactory.java \

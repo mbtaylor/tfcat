@@ -71,6 +71,9 @@ public class TfcatParser {
         Map<String,TfcatFactory<?>> map = new LinkedHashMap<>();
         map.put( "Point", Point::createTfcat );
         map.put( "MultiPoint", MultiPoint::createTfcat );
+        map.put( "LineString", LineString::createTfcat );
+        map.put( "MultiLineString", MultiLineString::createTfcat );
+        map.put( "Polygon", Polygon::createTfcat );
         return map;
     }
 

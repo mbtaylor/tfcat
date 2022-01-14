@@ -19,4 +19,24 @@ public class Position {
     public double getSpectral() {
         return spectral_;
     }
+
+    @Override
+    public int hashCode() {
+        int code = 9901;
+        code = 23 * code + Float.floatToIntBits( (float) time_ );
+        code = 23 * code + Float.floatToIntBits( (float) spectral_ );
+        return code;
+    }
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( o instanceof Position ) {
+            Position other = (Position) o;
+            return this.time_ == other.time_
+                && this.spectral_ ==  other.spectral_;
+        }
+        else {
+            return false;
+        }
+    }
 }

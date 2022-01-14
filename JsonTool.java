@@ -115,6 +115,69 @@ public class JsonTool {
         }
     }
 
+    public Position[][] asPositionArrayArray( Object json, String context,
+                                              boolean isRequired ) {
+        if ( json instanceof JSONArray ) {
+            JSONArray jarray = (JSONArray) json;
+            int na = jarray.length();
+            Position[][] arrays = new Position[ na ][];
+            for ( int ia = 0; ia < na; ia++ ) {
+                Position[] parray =
+                    asPositionArray( jarray.get( ia ), context + "[" + ia + "]",
+                                     true );
+                if ( parray == null ) {
+                    return null;
+                }
+                arrays[ ia ] = parray;
+            }
+            return arrays;
+        }
+        else if ( isNull( json ) ) {
+            if ( isRequired ) {
+                report( Level.ERROR, Report.toCode( "UA", context ),
+                        context + ": missing position[] array" );
+            }
+            return null;
+        }
+        else {
+            report( Level.ERROR, Report.toCode( "AA", context ),
+                    context + ": non-array value" );
+            return null;
+        }
+    }
+
+    public Position[][][] asPositionArrayArrayArray( Object json,
+                                                     String context,
+                                                     boolean isRequired ) {
+        if ( json instanceof JSONArray ) {
+            JSONArray jarray = (JSONArray) json;
+            int na = jarray.length();
+            Position[][][] arrays = new Position[ na ][][];
+            for ( int ia - 0; ia < na; ia++ ) {
+                Position[][] parray =
+                    asPositionArrayArray( jarray.get( ia ),
+                                          context + "[" + ia + "]", true );
+                if ( parray == null ) {
+                    return null;
+                }
+                arrays[ ia ] = parray;
+            }
+            return arrays;
+        }
+        else if ( isNull( json ) ) {
+            if ( isRequired ) {
+                report( Level.ERROR, Report.toCode( "UB", context ),
+                        context + ": missing position[][] array" );
+            }
+            return null;
+        }
+        else {
+            report( Level.ERROR, Report.toCode( "BB", context ),
+                    context + ": non-array value" );
+            return null;
+        }
+    }
+
     private static boolean isNull( Object json ) {
         return json == null || JSONObject.NULL.equals( json );
     }
