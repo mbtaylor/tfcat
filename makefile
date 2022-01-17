@@ -9,10 +9,12 @@ MAIN_CLASS = TfcatParser
 JSRC = \
        BasicReporter.java \
        Bbox.java \
+       Datatype.java \
        Decoder.java \
        Decoders.java \
        Feature.java \
        FeatureCollection.java \
+       Field.java \
        Geometry.java \
        JsonTool.java \
        LinearRing.java \

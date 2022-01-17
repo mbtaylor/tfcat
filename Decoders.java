@@ -94,6 +94,70 @@ public abstract class Decoders {
         }
     };
 
+    public static final Decoder<Datatype<?>> DATATYPE =
+            ( reporter, json ) -> {
+        String txt = new JsonTool( reporter ).asString( json, false );
+        if ( txt == null ) {
+            reporter.report( "no declared datatype, treat as string" );
+            return Datatype.STRING;
+        }
+        Datatype datatype = Datatype.forName( txt );
+        if ( datatype == null ) {
+            reporter.report( "Unknown datatype \"" + txt + "\", "
+                           + "treat as string" );
+            return Datatype.STRING;
+        }
+        else {
+            return datatype;
+        }
+    };
+
+    public static final Decoder<Field[]> FIELDS =
+            ( reporter, json ) -> {
+        List<Field> fieldList = new ArrayList<>();
+        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        if ( jobj != null ) {
+            for ( String key : jobj.keySet() ) {
+                Reporter fieldReporter = reporter.createReporter( key );
+                JSONObject fieldObj = new JsonTool( fieldReporter ) 
+                                     .asJSONObject( jobj.get( key ) );
+                if ( fieldObj != null ) {
+                    String info =
+                        new JsonTool( fieldReporter.createReporter( "info" ) )
+                       .asString( fieldObj.opt( "info" ), false );
+                    String ucd =
+                        new JsonTool( fieldReporter.createReporter( "ucd" ) )
+                       .asString( fieldObj.opt( "ucd" ), false );
+                    String unit =
+                        new JsonTool( fieldReporter.createReporter( "unit" ) )
+                       .asString( fieldObj.opt( "unit" ), false );
+                    Datatype<?> datatype =
+                        DATATYPE.decode( fieldReporter
+                                        .createReporter( "datatype" ),
+                                         fieldObj.opt( "datatype" ) );
+                    fieldList.add( new Field() {
+                        public String getName() {
+                            return key;
+                        }
+                        public String getInfo() {
+                            return info;
+                        }
+                        public String getUcd() {
+                            return ucd;
+                        }
+                        public String getUnit() {
+                            return unit;
+                        }
+                        public Datatype<?> getDatatype() {
+                            return datatype; 
+                        }
+                    } );
+                }
+            }
+        }
+        return fieldList.toArray( new Field[ 0 ] );
+    };
+
     private static final Map<String,Decoder<?>> shapeDecoders_ =
         createShapeDecoders();
 
@@ -203,28 +267,17 @@ public abstract class Decoders {
         else if ( type.equals( "FeatureCollection" ) ) {
             jtool.requireAbsent( jobj, "geometry" );   // RFC7946 sec 7.1
             jtool.requireAbsent( jobj, "properties" );
-            Reporter featureReporter = reporter.createReporter( "features" );
-            JSONArray jarray = new JsonTool( featureReporter )
-                              .asJSONArray( jobj.opt( "features" ) );
-            if ( jarray == null ) {
-                return null;
-            }
-            else {
-                List<Feature> featureList = new ArrayList<>();
-                for ( int i = 0; i < jarray.length(); i++ ) {
-                    Feature feature =
-                        FEATURE.decode( featureReporter
-                                       .createReporter( "[" + i + "]" ),
-                                        jarray.get( i ) );
-                    featureList.add( feature );
-                }
-                Object bboxJson = jobj.opt( "bbox" );
-                Bbox bbox = bboxJson == null
+            Feature[] features = createArrayDecoder( FEATURE, Feature.class )
+                                .decode( reporter.createReporter( "features" ),
+                                         jobj.opt( "features" ) );
+            Field[] fields = FIELDS.decode( reporter.createReporter( "fields" ),
+                                            jobj.opt( "fields" ) );
+            Object bboxJson = jobj.opt( "bbox" );
+            Bbox bbox = bboxJson == null
                       ? null
                       : Decoders.BBOX
                        .decode( reporter.createReporter( "bbox" ), bboxJson );
-                return new FeatureCollection( jobj, bbox, featureList );
-            }
+            return new FeatureCollection( jobj, bbox, features, fields );
         }
         else {
             reporter.report( "type is \"" + type

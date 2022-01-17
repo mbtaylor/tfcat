@@ -1,18 +1,23 @@
 
-import java.util.List;
 import org.json.JSONObject;
 
 public class FeatureCollection extends TfcatObject {
 
-    private final List<Feature> features_;
+    private final Feature[] features_;
+    private final Field[] fields_;
 
     public FeatureCollection( JSONObject json, Bbox bbox,
-                              List<Feature> features ) {
+                              Feature[] features, Field[] fields ) {
         super( json, "FeatureCollection", bbox );
         features_ = features;
+        fields_ = fields;
     }
 
-    public List<Feature> getFeatures() {
+    public Feature[] getFeatures() {
         return features_;
+    }
+
+    public Field[] getFields() {
+        return fields_;
     }
 }
