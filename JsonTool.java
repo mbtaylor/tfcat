@@ -114,7 +114,7 @@ public class JsonTool {
         }
     }
 
-    public boolean isNull( Object json ) {
+    public static boolean isNull( Object json ) {
         return json == null || JSONObject.NULL.equals( json );
     }
 }

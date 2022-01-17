@@ -2,6 +2,7 @@
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -267,17 +268,30 @@ public abstract class Decoders {
         else if ( type.equals( "FeatureCollection" ) ) {
             jtool.requireAbsent( jobj, "geometry" );   // RFC7946 sec 7.1
             jtool.requireAbsent( jobj, "properties" );
+            Field[] fields = FIELDS.decode( reporter.createReporter( "fields" ),
+                                            jobj.opt( "fields" ) );
+            Map<String,Field> fieldMap = new HashMap<>();
+            for ( Field field : fields ) {
+                fieldMap.put( field.getName(), field );
+            }
             Feature[] features = createArrayDecoder( FEATURE, Feature.class )
                                 .decode( reporter.createReporter( "features" ),
                                          jobj.opt( "features" ) );
-            Field[] fields = FIELDS.decode( reporter.createReporter( "fields" ),
-                                            jobj.opt( "fields" ) );
+            for ( int ifeat = 0; ifeat < features.length; ifeat++ ) {
+                Feature feat = features[ ifeat ];
+                JSONObject props = feat.getProperties();
+                Reporter propsReporter =
+                    reporter.createReporter( "[" + ifeat + "]/properties" );
+                if ( props != null ) {
+                    checkProperties( propsReporter, props, fieldMap );
+                }
+            }
             Object bboxJson = jobj.opt( "bbox" );
             Bbox bbox = bboxJson == null
                       ? null
                       : Decoders.BBOX
                        .decode( reporter.createReporter( "bbox" ), bboxJson );
-            return new FeatureCollection( jobj, bbox, features, fields );
+            return new FeatureCollection( jobj, bbox, fieldMap, features );
         }
         else {
             reporter.report( "type is \"" + type
@@ -285,6 +299,29 @@ public abstract class Decoders {
             return null;
         }
     };
+
+    private static void checkProperties( Reporter reporter,
+                                         JSONObject properties,
+                                         Map<String,Field> fields ) {
+        for ( String key : properties.keySet() ) {
+            Field field = fields.get( key );
+            Reporter propReporter = reporter.createReporter( key );
+            if ( field == null ) {
+                propReporter.report( "no corresponding field for property" );
+            }
+            else {
+                Object value = properties.get( key );
+                if ( !JsonTool.isNull( value ) &&
+                     ( value instanceof Number || value instanceof String ) ) {
+                    Datatype<?> datatype = field.getDatatype();
+                    if ( ! datatype.isType( value.toString() ) ) {
+                        propReporter.report( "bad " + datatype + " syntax"
+                                           + " \"" + value + "\"" );
+                    }
+                }
+            }
+        }
+    }
 
     private static final Map<String,Decoder<? extends TfcatObject>>
                          tfcatDecoders_ =
