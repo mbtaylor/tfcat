@@ -1,7 +1,12 @@
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 public abstract class Decoders {
 
@@ -88,6 +93,81 @@ public abstract class Decoders {
             return null;
         }
     };
+
+    private static final Map<String,Decoder<?>> shapeDecoders_ =
+        createShapeDecoders();
+
+    public static final Decoder<Geometry<?>> GEOMETRY =
+            ( reporter, json ) -> {
+        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        if ( jobj == null ) {
+            return null;
+        }
+        String type = new JsonTool( reporter.createReporter( "type" ) )
+                     .asString( jobj.opt( "type" ), true );
+        Object bboxJson = jobj.opt( "bbox" );
+        Bbox bbox = bboxJson == null
+                  ? null
+                  : Decoders.BBOX
+                   .decode( reporter.createReporter( "bbox" ), bboxJson );
+        if ( type == null ) {
+            return null;
+        }
+        else if ( type.equals( "GeometryCollection" ) ) {
+            Reporter geomReporter = reporter.createReporter( "geometries" );
+            JSONArray jarray = new JsonTool( geomReporter )
+                              .asJSONArray( jobj.opt( "geometries" ) );
+            if ( jarray == null ) {
+                return null;
+            }
+            else {
+                List<Geometry<?>> geomList = new ArrayList<>();
+                for ( int ig = 0; ig < jarray.length(); ig++ ) {
+                    Geometry<?> geom =
+                        GEOMETRY.decode( geomReporter, jarray.get( ig ) );
+                    if ( geom == null ) {
+                        return null;
+                    }
+                    geomList.add( geom );
+                }
+                return new Geometry<List<Geometry<?>>>( jobj, type, bbox,
+                                                        geomList );
+            }
+        }
+        Decoder<?> shapeDecoder = shapeDecoders_.get( type );
+        if ( shapeDecoder == null ) {
+            reporter.report( "Unknown geometry type \"" + type + "\"" );
+            return null;
+        }
+        else {
+            return createGeometry( reporter, jobj, type, bbox, shapeDecoder );
+        }
+    };
+
+    private static <T> Geometry<T>
+            createGeometry( Reporter reporter, JSONObject json, String type,
+                            Bbox bbox, Decoder<T> coordDecoder ) {
+        Object coords = json.opt( "coordinates" );
+        if ( coords == null ) {
+            reporter.report( "no coordinates" );
+            return null;
+        }
+        T shape = coordDecoder.decode( reporter.createReporter( "coordinates" ),
+                                       coords );
+        return shape == null ? null
+                             : new Geometry<T>( json, type, bbox, shape );
+    }
+
+    private static Map<String,Decoder<?>> createShapeDecoders() {
+        Map<String,Decoder<?>> map = new LinkedHashMap<>();
+        map.put( "Point", Decoders.POSITION );
+        map.put( "MultiPoint", Decoders.POSITIONS );
+        map.put( "LineString", Decoders.LINE_STRING );
+        map.put( "MultiLineString", Decoders.LINE_STRINGS );
+        map.put( "Polygon", Decoders.LINEAR_RINGS );
+        map.put( "MultiPolygon", Decoders.LINEAR_RINGS_ARRAY );
+        return map;
+    }
 
     private static <T> Decoder<T[]>
             createArrayDecoder( Decoder<T> scalarDecoder,
