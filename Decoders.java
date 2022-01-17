@@ -212,6 +212,121 @@ public abstract class Decoders {
         }
     };
 
+    public static final Decoder<TimeCoords> TIME_COORDS =
+            ( reporter, json ) -> {
+        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        if ( jobj == null ) {
+            return null;
+        }
+        String id = new JsonTool( reporter.createReporter( "id" ) )
+                   .asString( jobj.opt( "id" ), false );
+        String name = new JsonTool( reporter.createReporter( "name" ) )
+                     .asString( jobj.opt( "name" ), true );
+        String unit = new JsonTool( reporter.createReporter( "unit" ) )
+                     .asString( jobj.opt( "unit" ), true );
+        String timeOrigin = new JsonTool( reporter
+                                         .createReporter( "time_origin" ) )
+                                        
+                           .asString( jobj.opt( "time_origin" ), true );
+        String timeScale = new JsonTool( reporter
+                                        .createReporter( "time_scale" ) )
+                          .asString( jobj.opt( "time_scale" ), true );
+        return new TimeCoords() {
+            public String getId() {
+                return id;
+            }
+            public String getName() {
+                return name;
+            }
+            public String getUnit() {
+                return unit;
+            }
+            public String getTimeOrigin() {
+                return timeOrigin;
+            }
+            public String getTimeScale() {
+                return timeScale;
+            }
+        };
+    };
+
+    public static final Decoder<SpectralCoords> SPECTRAL_COORDS =
+            ( reporter, json ) -> {
+        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        if ( jobj == null ) {
+            return null;
+        }
+        String name = new JsonTool( reporter.createReporter( "name" ) )
+                     .asString( jobj.opt( "name" ), true );
+        String unit = new JsonTool( reporter.createReporter( "unit" ) )
+                     .asString( jobj.opt( "unit" ), true );
+        return new SpectralCoords() {
+            public String getName() {
+                return name;
+            }
+            public String getUnit() {
+                return unit;
+            }
+        };
+    };
+
+    public static final Decoder<RefPosition> REF_POSITION =
+            ( reporter, json ) -> {
+        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        if ( jobj == null ) {
+            return null;
+        }
+        String id = new JsonTool( reporter.createReporter( "id" ) )
+                   .asString( jobj.opt( "id" ), true );
+        return new RefPosition() {
+            public String getId() {
+                return id;
+            }
+        };
+    };
+
+    public static final Decoder<Crs> CRS =
+            ( reporter, json ) -> {
+        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        if ( jobj == null ) {
+            return null;
+        }
+        Reporter typeReporter = reporter.createReporter( "type" );
+        String crsType = new JsonTool( typeReporter )
+                        .asString( jobj.opt( "type" ), true );
+        if ( crsType != null &&
+             ! Crs.CRS_TYPES.contains( crsType ) ) {
+            typeReporter.report( "disallowed value \"" + crsType + "\""
+                               + " (not in " + Crs.CRS_TYPES + ")" );
+        }
+        Reporter propsReporter = reporter.createReporter( "properties" );
+        JSONObject crsProps = new JsonTool( propsReporter )
+                             .asJSONObject( jobj.opt( "properties" ) );
+        final TimeCoords timeCoords;
+        final SpectralCoords spectralCoords;
+        final RefPosition refPosition;
+        if ( crsProps != null ) {
+            timeCoords =
+                TIME_COORDS
+               .decode( propsReporter.createReporter( "time_coords" ),
+                        crsProps.opt( "time_coords" ) );
+            spectralCoords =
+                SPECTRAL_COORDS
+               .decode( propsReporter.createReporter( "spectral_coords" ),
+                        crsProps.opt( "spectral_coords" ) );
+            refPosition =
+                REF_POSITION
+               .decode( propsReporter.createReporter( "ref_position" ),
+                        crsProps.opt( "ref_position" ) );
+        }
+        else {
+            timeCoords = null;
+            spectralCoords = null;
+            refPosition = null;
+        }
+        return new Crs( crsType, timeCoords, spectralCoords, refPosition );
+    };
+
     public static final Decoder<Feature> FEATURE =
             ( reporter, json ) -> {
         JsonTool jtool = new JsonTool( reporter );
@@ -291,7 +406,9 @@ public abstract class Decoders {
                       ? null
                       : Decoders.BBOX
                        .decode( reporter.createReporter( "bbox" ), bboxJson );
-            return new FeatureCollection( jobj, bbox, fieldMap, features );
+            Crs crs = CRS.decode( reporter.createReporter( "crs" ),
+                                  jobj.opt( "crs" ) );
+            return new FeatureCollection( jobj, bbox, crs, fieldMap, features );
         }
         else {
             reporter.report( "type is \"" + type

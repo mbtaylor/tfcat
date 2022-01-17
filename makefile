@@ -10,6 +10,7 @@ MAIN_CLASS = TfcatParser
 JSRC = \
        BasicReporter.java \
        Bbox.java \
+       Crs.java \
        Datatype.java \
        Decoder.java \
        Decoders.java \
@@ -20,9 +21,12 @@ JSRC = \
        JsonTool.java \
        LinearRing.java \
        Position.java \
+       RefPosition.java \
        Reporter.java \
+       SpectralCoords.java \
        TfcatObject.java \
        TfcatParser.java \
+       TimeCoords.java \
 
 build: jar javadocs
 
