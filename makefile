@@ -11,11 +11,14 @@ JSRC = \
        Bbox.java \
        Decoder.java \
        Decoders.java \
+       Feature.java \
+       FeatureCollection.java \
        Geometry.java \
        JsonTool.java \
        LinearRing.java \
        Position.java \
        Reporter.java \
+       TfcatObject.java \
        TfcatParser.java \
 
 build: jar

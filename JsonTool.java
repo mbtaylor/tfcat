@@ -26,6 +26,22 @@ public class JsonTool {
         }
     }
 
+    public String asStringOrNumber( Object json, boolean isRequired ) {
+        if ( json instanceof String || json instanceof Number ) {
+            return json.toString();
+        }
+        else if ( isNull( json ) ) {
+            if ( isRequired ) {
+                reporter_.report( "missing value" );
+            }
+            return null;
+        }
+        else {
+            reporter_.report( "non-string/numeric value" );
+            return null;
+        }
+    }
+
     public double[] asNumericArray( Object json, int nreq ) {
         boolean isNanPermitted = false;
         if ( json instanceof JSONArray ) {

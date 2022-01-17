@@ -124,10 +124,9 @@ public abstract class Decoders {
                 List<Geometry<?>> geomList = new ArrayList<>();
                 for ( int ig = 0; ig < jarray.length(); ig++ ) {
                     Geometry<?> geom =
-                        GEOMETRY.decode( geomReporter, jarray.get( ig ) );
-                    if ( geom == null ) {
-                        return null;
-                    }
+                        GEOMETRY.decode( geomReporter
+                                        .createReporter( "[" + ig + "]" ),
+                                         jarray.get( ig ) );
                     geomList.add( geom );
                 }
                 return new Geometry<List<Geometry<?>>>( jobj, type, bbox,
@@ -141,6 +140,114 @@ public abstract class Decoders {
         }
         else {
             return createGeometry( reporter, jobj, type, bbox, shapeDecoder );
+        }
+    };
+
+    public static final Decoder<Feature> FEATURE =
+            ( reporter, json ) -> {
+        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        if ( jobj == null ) {
+            return null;
+        }
+        String type = new JsonTool( reporter.createReporter( "type" ) )
+                     .asString( jobj.opt( "type" ), true );
+        if ( type == null ) {
+            return null;
+        }
+        else if ( type.equals( "Feature" ) ) {
+            Geometry<?> geometry =
+                GEOMETRY.decode( reporter.createReporter( "geometry" ),
+                                 jobj.opt( "geometry" ) );
+            if ( geometry == null ) {
+                return null;
+            }
+            Object bboxJson = jobj.opt( "bbox" );
+            Bbox bbox = bboxJson == null
+                  ? null
+                  : Decoders.BBOX
+                   .decode( reporter.createReporter( "bbox" ), bboxJson );
+            String id = new JsonTool( reporter.createReporter( "id" ) )
+                       .asStringOrNumber( jobj.opt( "id" ), false );
+            Object propsJson = jobj.opt( "properties" );
+            JSONObject properties =
+                  propsJson == null
+                ? null
+                : new JsonTool( reporter.createReporter( "properties" ) )
+                 .asJSONObject( propsJson );
+            return new Feature( jobj, bbox, geometry, id, properties );
+        }
+        else {
+            reporter.report( "type is \"" + type + "\" not \"Feature\"" );
+            return null;
+        }
+    };
+
+    public static final Decoder<FeatureCollection> FEATURE_COLLECTION =
+            ( reporter, json ) -> {
+        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        if ( jobj == null ) {
+            return null;
+        }
+        String type = new JsonTool( reporter.createReporter( "type" ) )
+                     .asString( jobj.opt( "type" ), true );
+        if ( type == null ) {
+            return null;
+        }
+        else if ( type.equals( "FeatureCollection" ) ) {
+            Reporter featureReporter = reporter.createReporter( "features" );
+            JSONArray jarray = new JsonTool( featureReporter )
+                              .asJSONArray( jobj.opt( "features" ) );
+            if ( jarray == null ) {
+                return null;
+            }
+            else {
+                List<Feature> featureList = new ArrayList<>();
+                for ( int i = 0; i < jarray.length(); i++ ) {
+                    Feature feature =
+                        FEATURE.decode( featureReporter
+                                       .createReporter( "[" + i + "]" ),
+                                        jarray.get( i ) );
+                    featureList.add( feature );
+                }
+                Object bboxJson = jobj.opt( "bbox" );
+                Bbox bbox = bboxJson == null
+                      ? null
+                      : Decoders.BBOX
+                       .decode( reporter.createReporter( "bbox" ), bboxJson );
+                return new FeatureCollection( jobj, bbox, featureList );
+            }
+        }
+        else {
+            reporter.report( "type is \"" + type
+                           + "\" not \"FeatureCollection\"" );
+            return null;
+        }
+    };
+
+    private static final Map<String,Decoder<? extends TfcatObject>>
+                         tfcatDecoders_ =
+        createTfcatDecoders();
+
+    public static final Decoder<TfcatObject> TFCAT =
+            ( reporter, json ) -> {
+        JsonTool jtool = new JsonTool( reporter );
+        JSONObject jobj = jtool.asJSONObject( json );
+        if ( jobj == null ) {
+            return null;
+        }
+        String type = new JsonTool( reporter.createReporter( "type" ) )
+                     .asString( jobj.opt( "type" ), true );
+        if ( type == null ) {
+            return null;
+        }
+        Decoder<? extends TfcatObject> decoder = tfcatDecoders_.get( type );
+        if ( decoder == null ) {
+            reporter.createReporter( "type" )
+                    .report( "unknown TFCat/GeoJSON type \"" + type + "\"" );
+            return null;
+        }
+        else {
+            return decoder.decode( reporter, jobj );
         }
     };
 
@@ -160,12 +267,23 @@ public abstract class Decoders {
 
     private static Map<String,Decoder<?>> createShapeDecoders() {
         Map<String,Decoder<?>> map = new LinkedHashMap<>();
-        map.put( "Point", Decoders.POSITION );
-        map.put( "MultiPoint", Decoders.POSITIONS );
-        map.put( "LineString", Decoders.LINE_STRING );
-        map.put( "MultiLineString", Decoders.LINE_STRINGS );
-        map.put( "Polygon", Decoders.LINEAR_RINGS );
-        map.put( "MultiPolygon", Decoders.LINEAR_RINGS_ARRAY );
+        map.put( "Point", POSITION );
+        map.put( "MultiPoint", POSITIONS );
+        map.put( "LineString", LINE_STRING );
+        map.put( "MultiLineString", LINE_STRINGS );
+        map.put( "Polygon", LINEAR_RINGS );
+        map.put( "MultiPolygon", LINEAR_RINGS_ARRAY );
+        return map;
+    }
+
+    private static Map<String,Decoder<? extends TfcatObject>>
+            createTfcatDecoders() {
+        Map<String,Decoder<? extends TfcatObject>> map = new LinkedHashMap<>();
+        map.put( "Feature", FEATURE );
+        map.put( "FeatureCollection", FEATURE_COLLECTION );
+        for ( String geomType : createShapeDecoders().keySet() ) {
+            map.put( geomType, GEOMETRY );
+        }
         return map;
     }
 

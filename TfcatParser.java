@@ -15,7 +15,7 @@ public class TfcatParser {
                              : new FileInputStream( inFile ) ) {
             JSONObject json = new JSONObject( new JSONTokener( in ) );
             BasicReporter reporter = new BasicReporter();
-            Geometry<?> geom = Decoders.GEOMETRY.decode( reporter, json );
+            TfcatObject tfcat = Decoders.TFCAT.decode( reporter, json );
             List<String> msgs = reporter.getMessages();
             if ( msgs.size() == 0 ) {
                 System.out.println( "OK" );
