@@ -67,7 +67,7 @@ public abstract class Datatype<T> {
     }
 
     /**
-     * @throws  RuntimeException
+     * @throws  RuntimeException  if the syntax is wrong
      */
     public abstract T decode( String txt );
 

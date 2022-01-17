@@ -2,6 +2,7 @@
 JARFILE = tfcat.jar
 JSON_JAR = json.jar
 JAVAC = javac
+JAVADOC = javadoc -Xdoclint:all,-missing
 JAR = jar
 CLASSPATH = $(JSON_JAR)
 MAIN_CLASS = TfcatParser
@@ -23,9 +24,14 @@ JSRC = \
        TfcatObject.java \
        TfcatParser.java \
 
-build: jar
+build: jar javadocs
 
 jar: $(JARFILE)
+
+javadocs: $(JSRC) $(JSON_JAR)
+	rm -rf javadocs
+	mkdir javadocs
+	$(JAVADOC) -classpath $(JSON_JAR) -quiet -d javadocs $(JSRC)
 
 test: build
 	java -classpath $(JARFILE):$(JSON_JAR) $(MAIN_CLASS) example.tfcat
@@ -43,5 +49,5 @@ $(JSON_JAR):
 	cp /mbt/starjava/source/feather/src/lib/$@ ./
 
 clean:
-	rm -rf $(JARFILE) $(JSON_JAR) tmp
+	rm -rf $(JARFILE) $(JSON_JAR) tmp javadocs
 
