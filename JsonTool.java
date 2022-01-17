@@ -108,6 +108,12 @@ public class JsonTool {
         }
     }
 
+    public void requireAbsent( JSONObject json, String member ) {
+        if ( json.has( member ) ) {
+            reporter_.report( "has illegal member \"" + member + "\"" );
+        }
+    }
+
     public boolean isNull( Object json ) {
         return json == null || JSONObject.NULL.equals( json );
     }

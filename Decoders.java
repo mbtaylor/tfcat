@@ -99,7 +99,8 @@ public abstract class Decoders {
 
     public static final Decoder<Geometry<?>> GEOMETRY =
             ( reporter, json ) -> {
-        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        JsonTool jtool = new JsonTool( reporter );
+        JSONObject jobj = jtool.asJSONObject( json );
         if ( jobj == null ) {
             return null;
         }
@@ -139,13 +140,17 @@ public abstract class Decoders {
             return null;
         }
         else {
+            jtool.requireAbsent( jobj, "geometry" );   // RFC7946 sec 7.1
+            jtool.requireAbsent( jobj, "properties" );
+            jtool.requireAbsent( jobj, "features" );
             return createGeometry( reporter, jobj, type, bbox, shapeDecoder );
         }
     };
 
     public static final Decoder<Feature> FEATURE =
             ( reporter, json ) -> {
-        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        JsonTool jtool = new JsonTool( reporter );
+        JSONObject jobj = jtool.asJSONObject( json );
         if ( jobj == null ) {
             return null;
         }
@@ -174,6 +179,7 @@ public abstract class Decoders {
                 ? null
                 : new JsonTool( reporter.createReporter( "properties" ) )
                  .asJSONObject( propsJson );
+            jtool.requireAbsent( jobj, "features" );   // RFC7946 sec 7.1
             return new Feature( jobj, bbox, geometry, id, properties );
         }
         else {
@@ -184,7 +190,8 @@ public abstract class Decoders {
 
     public static final Decoder<FeatureCollection> FEATURE_COLLECTION =
             ( reporter, json ) -> {
-        JSONObject jobj = new JsonTool( reporter ).asJSONObject( json );
+        JsonTool jtool = new JsonTool( reporter );
+        JSONObject jobj = jtool.asJSONObject( json );
         if ( jobj == null ) {
             return null;
         }
@@ -194,6 +201,8 @@ public abstract class Decoders {
             return null;
         }
         else if ( type.equals( "FeatureCollection" ) ) {
+            jtool.requireAbsent( jobj, "geometry" );   // RFC7946 sec 7.1
+            jtool.requireAbsent( jobj, "properties" );
             Reporter featureReporter = reporter.createReporter( "features" );
             JSONArray jarray = new JsonTool( featureReporter )
                               .asJSONArray( jobj.opt( "features" ) );
