@@ -4,20 +4,25 @@ import java.util.List;
 
 public class BasicReporter implements Reporter {
 
+    private final boolean isDebug_;
     private final String context_;
     private final List<String> messages_; 
 
-    public BasicReporter() {
-        this( null, new ArrayList<String>() );
+    public BasicReporter( boolean isDebug ) {
+        this( isDebug, null, new ArrayList<String>() );
     }
 
-    private BasicReporter( String context, List<String> messages ) {
+    private BasicReporter( boolean isDebug, String context,
+                           List<String> messages ) {
+        isDebug_ = isDebug;
         context_ = context;
         messages_ = messages;
+ 
     }
 
     public BasicReporter createReporter( String subContext ) {
-        return new BasicReporter( context_ == null 
+        return new BasicReporter( isDebug_,
+                                  context_ == null 
                                 ? subContext
                                 : context_ + "/" + subContext,
                                   messages_ );
@@ -30,7 +35,13 @@ public class BasicReporter implements Reporter {
                 .append( ": " );
         }
         sbuf.append( message );
-        messages_.add( sbuf.toString() );
+        String txt = sbuf.toString();
+        messages_.add( txt );
+        if ( isDebug_ ) {
+            System.err.println( txt );
+            Thread.dumpStack();
+            System.err.println();
+        }
     }
 
     public List<String> getMessages() {
