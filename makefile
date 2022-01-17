@@ -27,6 +27,7 @@ jar: $(JARFILE)
 
 test: build
 	java -classpath $(JARFILE):$(JSON_JAR) $(MAIN_CLASS) example.tfcat
+	java -classpath $(JARFILE):$(JSON_JAR) $(MAIN_CLASS) jupiter-obs.tfcat
 
 $(JARFILE): $(JSRC) $(JSON_JAR)
 	rm -rf tmp
