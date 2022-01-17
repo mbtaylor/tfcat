@@ -3,6 +3,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -13,9 +14,14 @@ public class TfcatParser {
         try ( InputStream in = "-".equals( inFile )
                              ? System.in
                              : new FileInputStream( inFile ) ) {
-            JSONObject json = new JSONObject( new JSONTokener( in ) );
             BasicReporter reporter = new BasicReporter();
-            TfcatObject tfcat = Decoders.TFCAT.decode( reporter, json );
+            try {
+                JSONObject json = new JSONObject( new JSONTokener( in ) );
+                TfcatObject tfcat = Decoders.TFCAT.decode( reporter, json );
+            }
+            catch ( JSONException e ) {
+                reporter.report( "Bad JSON: " + e.getMessage() );
+            }
             List<String> msgs = reporter.getMessages();
             if ( msgs.size() == 0 ) {
                 System.out.println( "OK" );
