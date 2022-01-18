@@ -190,8 +190,7 @@ public abstract class Decoders {
                 List<Geometry<?>> geomList = new ArrayList<>();
                 for ( int ig = 0; ig < jarray.length(); ig++ ) {
                     Geometry<?> geom =
-                        GEOMETRY.decode( geomReporter
-                                        .createReporter( "[" + ig + "]" ),
+                        GEOMETRY.decode( geomReporter.createReporter( ig ),
                                          jarray.get( ig ) );
                     geomList.add( geom );
                 }
@@ -392,11 +391,15 @@ public abstract class Decoders {
             Feature[] features = createArrayDecoder( FEATURE, Feature.class )
                                 .decode( reporter.createReporter( "features" ),
                                          jobj.opt( "features" ) );
+            if ( features == null ) {
+                return null;
+            }
             for ( int ifeat = 0; ifeat < features.length; ifeat++ ) {
                 Feature feat = features[ ifeat ];
                 JSONObject props = feat.getProperties();
                 Reporter propsReporter =
-                    reporter.createReporter( "[" + ifeat + "]/properties" );
+                    reporter.createReporter( ifeat )
+                            .createReporter( "properties" );
                 if ( props != null ) {
                     checkProperties( propsReporter, props, fieldMap );
                 }
@@ -515,9 +518,8 @@ public abstract class Decoders {
             @SuppressWarnings("unchecked")
             T[] array = (T[]) Array.newInstance( scalarClazz, n );
             for ( int i = 0; i < n; i++ ) {
-                T item = scalarDecoder
-                        .decode( reporter.createReporter( "[" + i + "]" ),
-                                 jarray.get( i ) );
+                T item = scalarDecoder.decode( reporter.createReporter( i ),
+                                               jarray.get( i ) );
                 if ( item == null ) {
                     return null;
                 }

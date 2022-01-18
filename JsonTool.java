@@ -63,7 +63,7 @@ public class JsonTool {
                     dval = ((Number) item).doubleValue();
                 }
                 else {
-                    reporter_.createReporter( "[" + id + "]" )
+                    reporter_.createReporter( id )
                              .report( "non-numeric value (" + item + ")" );
                     return null;
                 }

@@ -21,11 +21,15 @@ public class BasicReporter implements Reporter {
     }
 
     public BasicReporter createReporter( String subContext ) {
-        return new BasicReporter( isDebug_,
-                                  context_ == null 
-                                ? subContext
-                                : context_ + "/" + subContext,
-                                  messages_ );
+        String context = context_ == null ? subContext
+                                          : context_ + "/" + subContext;
+        return new BasicReporter( isDebug_, context, messages_ );
+    }
+
+    public BasicReporter createReporter( int subContext ) {
+        String context = ( context_ == null ? "" : context_ )
+                       + "[" + subContext + "]";
+        return new BasicReporter( isDebug_, context, messages_ );
     }
 
     public void report( String message ) {
