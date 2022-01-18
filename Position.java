@@ -36,4 +36,15 @@ public class Position {
             return false;
         }
     }
+
+    @Override
+    public String toString() {
+        return new StringBuffer()
+             .append( "[" )
+             .append( getTime() )
+             .append( ", " )
+             .append( getSpectral() )
+             .append( "]" )
+             .toString();
+    }
 }

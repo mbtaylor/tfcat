@@ -110,7 +110,6 @@ public class TfcatParser {
             }
             List<String> msgs = reporter.getMessages();
             if ( msgs.size() == 0 ) {
-                System.out.println( "OK" );
                 return;
             }
             else {

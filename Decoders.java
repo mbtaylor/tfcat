@@ -74,8 +74,26 @@ public abstract class Decoders {
     public static final Decoder<LinearRing[]> LINEAR_RINGS =
         createArrayDecoder( LINEAR_RING, LinearRing.class );
 
-    public static final Decoder<LinearRing[][]> LINEAR_RINGS_ARRAY =
-        createArrayDecoder( LINEAR_RINGS, LinearRing[].class );
+    public static final Decoder<LinearRing[]> POLYGON =
+            ( reporter, json ) -> {
+        LinearRing[] rings = LINEAR_RINGS.decode( reporter, json );
+        if ( rings != null && rings.length > 0 ) {
+            if ( rings[ 0 ].isClockwise() ) {
+                reporter.report( "first (exterior) linear ring"
+                               + " is not anticlockwise" );
+            }
+            for ( int ir = 1; ir < rings.length; ir++ ) {
+                if ( ! rings[ ir ].isClockwise() ) {
+                    reporter.report( "interior linear ring #" + ir
+                                   + " is not clockwise" );
+                }
+            }
+        }
+        return rings;
+    };
+
+    public static final Decoder<LinearRing[][]> POLYGONS =
+        createArrayDecoder( POLYGON, LinearRing[].class );
 
     public static final Decoder<Bbox> BBOX =
             ( reporter, json ) -> {
@@ -226,13 +244,21 @@ public abstract class Decoders {
         String unit = new JsonTool( reporter.createReporter( "unit" ) )
                      .asString( jobj.opt( "unit" ), true );
         reporter.checkUnit( unit );
-        String timeOrigin = new JsonTool( reporter
-                                         .createReporter( "time_origin" ) )
-                                        
+        Reporter toReporter = reporter.createReporter( "time_origin" );
+        String timeOrigin = new JsonTool( toReporter )
                            .asString( jobj.opt( "time_origin" ), true );
-        String timeScale = new JsonTool( reporter
-                                        .createReporter( "time_scale" ) )
+        if ( timeOrigin != null &&
+             ! TimeCoords.TIME_ORIGIN_REGEX.matcher( timeOrigin ).matches() ) {
+            toReporter.report( "not ISO-8601: \"" + timeOrigin + "\"" );
+        }
+        Reporter tsReporter = reporter.createReporter( "time_scale" );
+        String timeScale = new JsonTool( tsReporter )
                           .asString( jobj.opt( "time_scale" ), true );
+        if ( timeScale != null &&
+             ! TimeCoords.TIME_SCALES.contains( timeScale ) ) {
+            tsReporter.report( "disallowed value \"" + timeScale + "\""
+                             + " (not in " + TimeCoords.TIME_SCALES + ")" );
+        }
         return new TimeCoords() {
             public String getId() {
                 return id;
@@ -494,8 +520,8 @@ public abstract class Decoders {
         map.put( "MultiPoint", POSITIONS );
         map.put( "LineString", LINE_STRING );
         map.put( "MultiLineString", LINE_STRINGS );
-        map.put( "Polygon", LINEAR_RINGS );
-        map.put( "MultiPolygon", LINEAR_RINGS_ARRAY );
+        map.put( "Polygon", POLYGON );
+        map.put( "MultiPolygon", POLYGONS );
         return map;
     }
 

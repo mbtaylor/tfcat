@@ -43,8 +43,10 @@ javadocs: $(JSRC) $(JLIBS)
 test: build
 	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) example.tfcat
 	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) jupiter-obs.tfcat
-	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) play.tfcat
 	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) doc-example.tfcat
+
+playtest: build
+	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) play.tfcat
 
 $(JARFILE): $(JSRC) $(JLIBS)
 	rm -rf tmp

@@ -38,9 +38,8 @@
       }
     },
     "crs": {
-        "type": "Cartesian",
+        "type": "Time-Frequency",
         "properties": {
-            "name": "Time-Spectrogram",
             "time_coords": {
                 "name": "Timestamp",
                 "id": "unix",

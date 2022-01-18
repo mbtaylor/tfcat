@@ -67,6 +67,7 @@ public class JsonTool {
                              .report( "non-numeric value (" + item + ")" );
                     return null;
                 }
+                darray[ id ] = dval;
             }
             return darray;
         }

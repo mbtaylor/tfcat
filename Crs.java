@@ -2,7 +2,7 @@
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 public class Crs {
 
@@ -12,7 +12,8 @@ public class Crs {
     private final RefPosition refPosition_;
 
     public static Collection<String> CRS_TYPES =
-            Collections.unmodifiableSet( new HashSet<String>( Arrays.asList( 
+            Collections
+           .unmodifiableSet( new LinkedHashSet<String>( Arrays.asList( 
         "Time-Frequency", "Time-Wavelength", "Time-Energy", "Time-Wavenumber"
     ) ) );
 
