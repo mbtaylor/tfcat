@@ -1,10 +1,13 @@
 
 JARFILE = tfcat.jar
 JSON_JAR = json.jar
+UCIDY_JAR = ucidy-1.2-beta.jar
+UNITY_JAR = unity-1.0.jar
+JLIBS = $(JSON_JAR) $(UCIDY_JAR) $(UNITY_JAR)
+CLASSPATH = $(JSON_JAR):$(UCIDY_JAR):$(UNITY_JAR)
 JAVAC = javac
 JAVADOC = javadoc -Xdoclint:all,-missing
 JAR = jar
-CLASSPATH = $(JSON_JAR)
 MAIN_CLASS = TfcatParser
 
 JSRC = \
@@ -32,26 +35,30 @@ build: jar javadocs
 
 jar: $(JARFILE)
 
-javadocs: $(JSRC) $(JSON_JAR)
+javadocs: $(JSRC) $(JLIBS)
 	rm -rf javadocs
 	mkdir javadocs
-	$(JAVADOC) -classpath $(JSON_JAR) -quiet -d javadocs $(JSRC)
+	$(JAVADOC) -classpath $(CLASSPATH) -quiet -d javadocs $(JSRC)
 
 test: build
-	java -classpath $(JARFILE):$(JSON_JAR) $(MAIN_CLASS) example.tfcat
-	java -classpath $(JARFILE):$(JSON_JAR) $(MAIN_CLASS) jupiter-obs.tfcat
-	java -classpath $(JARFILE):$(JSON_JAR) $(MAIN_CLASS) doc-example.tfcat
+	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) example.tfcat
+	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) jupiter-obs.tfcat
+	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) play.tfcat
+	java -classpath $(JARFILE):$(CLASSPATH) $(MAIN_CLASS) doc-example.tfcat
 
-$(JARFILE): $(JSRC) $(JSON_JAR)
+$(JARFILE): $(JSRC) $(JLIBS)
 	rm -rf tmp
 	mkdir -p tmp
-	$(JAVAC) -classpath $(JSON_JAR) -Xlint:unchecked -d tmp $(JSRC) \
+	$(JAVAC) -classpath $(CLASSPATH) -Xlint:unchecked -d tmp $(JSRC) \
            && $(JAR) cfe $@ $(MAIN_CLASS) -C tmp .
 	rm -rf tmp
 
 $(JSON_JAR):
 	cp /mbt/starjava/source/feather/src/lib/$@ ./
 
+$(UNITY_JAR) $(UCIDY_JAR):
+	cp /mbt/starjava/source/ttools/src/lib/$@ ./
+
 clean:
-	rm -rf $(JARFILE) $(JSON_JAR) tmp javadocs
+	rm -rf $(JARFILE) $(JLIBS) tmp javadocs
 

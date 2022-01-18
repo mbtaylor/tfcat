@@ -132,6 +132,8 @@ public abstract class Decoders {
                     String unit =
                         new JsonTool( fieldReporter.createReporter( "unit" ) )
                        .asString( fieldObj.opt( "unit" ), false );
+                    reporter.checkUcd( ucd );
+                    reporter.checkUnit( unit );
                     Datatype<?> datatype =
                         DATATYPE.decode( fieldReporter
                                         .createReporter( "datatype" ),
@@ -223,6 +225,7 @@ public abstract class Decoders {
                      .asString( jobj.opt( "name" ), true );
         String unit = new JsonTool( reporter.createReporter( "unit" ) )
                      .asString( jobj.opt( "unit" ), true );
+        reporter.checkUnit( unit );
         String timeOrigin = new JsonTool( reporter
                                          .createReporter( "time_origin" ) )
                                         
@@ -259,6 +262,7 @@ public abstract class Decoders {
                      .asString( jobj.opt( "name" ), true );
         String unit = new JsonTool( reporter.createReporter( "unit" ) )
                      .asString( jobj.opt( "unit" ), true );
+        reporter.checkUnit( unit );
         return new SpectralCoords() {
             public String getName() {
                 return name;

@@ -1,4 +1,6 @@
 
+import ari.ucidy.UCD;
+import ari.ucidy.UCDParser;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,11 +8,67 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.UnaryOperator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import uk.me.nxg.unity.OneUnit;
+import uk.me.nxg.unity.Syntax;
+import uk.me.nxg.unity.UnitExpr;
+import uk.me.nxg.unity.UnitParser;
+import uk.me.nxg.unity.UnitParserException;
 
 public class TfcatParser {
+
+    private static UnaryOperator<String> getUcdChecker() {
+        try {
+            UCDParser.class.toString();
+            Logger.getLogger( "ari.ucidy" ).setLevel( Level.OFF );
+            return ucd -> {
+                UCD pucd = UCDParser.defaultParser.parse( ucd );
+                Iterator<String> errit = pucd.getErrors();
+                return errit.hasNext() ? errit.next() : null;
+            };
+        }
+        catch ( Throwable e ) {
+            return null;
+        }
+    }
+
+    private static UnaryOperator<String> getUnitChecker() {
+        try {
+            UnitParser.class.toString();
+            return unit -> {
+                Syntax syntax = Syntax.VOUNITS;
+                UnitExpr punit;
+                try { 
+                    punit = new UnitParser( syntax, unit ).getParsed();
+                }
+                catch ( Exception e ) {
+                    return "bad unit \"" + unit + "\" (" + e.getMessage() + ")";
+                }
+                if ( punit.isFullyConformant( syntax ) ) {
+                    return null;
+                }
+                else {
+                    for ( OneUnit word : punit ) {
+                        if ( ! word.isRecognisedUnit( syntax ) ) {
+                            return "unrecognised unit \"" + word + "\"";
+                        }
+                        else if ( ! word.isRecommendedUnit( syntax ) ) {
+                            return "deprecated unit \"" + word + "\"";
+                        }
+                    }
+                    return "unidentified problem with unit \"" + unit + "\"";
+                }
+            };
+        }
+        catch ( Throwable e ) {
+            return null;
+        }
+    }
 
     public static void main( String[] args ) throws IOException {
         String usage = "\n   "
@@ -41,7 +99,8 @@ public class TfcatParser {
         try ( InputStream in = "-".equals( inFile )
                              ? System.in
                              : new FileInputStream( inFile ) ) {
-            BasicReporter reporter = new BasicReporter( isDebug );
+            BasicReporter reporter =
+                new BasicReporter( isDebug, getUcdChecker(), getUnitChecker() );
             try {
                 JSONObject json = new JSONObject( new JSONTokener( in ) );
                 TfcatObject tfcat = Decoders.TFCAT.decode( reporter, json );
